@@ -1,0 +1,10 @@
+artifacts
+cache
+deployments
+node_modules
+.env
+.vscode
+*.txt
+package-lock.json
+.VSCodeCounter
+docs
