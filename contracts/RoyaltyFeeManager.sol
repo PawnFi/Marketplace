@@ -146,13 +146,16 @@ contract RoyaltyFeeManager is OwnableUpgradeable, IRoyaltyFeeManager {
                 }
             }
         }
-
-        if(globallyEnabled) {
-            royaltyAmount = amount * standardRoyaltyFee / DENOMINATOR;
-        } else {
-            uint256 referenceRoyaltyAmount = amount * royaltyFeeLimit / DENOMINATOR;
-            if(royaltyAmount > referenceRoyaltyAmount) {
-                royaltyAmount = referenceRoyaltyAmount;
+        if (receiver == address(0)) {
+            royaltyAmount = 0;
+        }else{
+            if(globallyEnabled) {
+                royaltyAmount = amount * standardRoyaltyFee / DENOMINATOR;
+            } else {
+                uint256 referenceRoyaltyAmount = amount * royaltyFeeLimit / DENOMINATOR;
+                if(royaltyAmount > referenceRoyaltyAmount) {
+                    royaltyAmount = referenceRoyaltyAmount;
+                }
             }
         }
     }

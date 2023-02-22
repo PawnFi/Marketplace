@@ -283,14 +283,16 @@ contract PawnfiApproveTrade is OwnableUpgradeable, ReentrancyGuardUpgradeable {
      * @param amount Sent amount
      */
     function _transferAsset(address token, address recipient, uint256 amount) private {
-        if(token == WETH) {
-            uint256 bal = address(this).balance;
-            if(bal < amount) {
-                IWETH(WETH).withdraw(amount - bal);
+        if(recipient != address(0) && amount>0){
+            if(token == WETH) {
+                uint256 bal = address(this).balance;
+                if(bal < amount) {
+                    IWETH(WETH).withdraw(amount - bal);
+                }
+                payable(recipient).transfer(amount);
+            } else {
+                IERC20Upgradeable(token).safeTransfer(recipient, amount);
             }
-            payable(recipient).transfer(amount);
-        } else {
-            IERC20Upgradeable(token).safeTransfer(recipient, amount);
         }
     }
 
