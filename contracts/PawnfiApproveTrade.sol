@@ -255,13 +255,14 @@ contract PawnfiApproveTrade is OwnableUpgradeable, ReentrancyGuardUpgradeable {
      * @return royaltyReciever Royalty receiver
      */
     function _swapAssets(address maker, address taker, Order memory order) private returns (uint256 fee, uint256 royaltyAmount, address royaltyReciever) {
+        require(order.assetClass == ERC721, "Only support ERC721 assetClass");
         fee = order.price * platformFee / DENOMINATOR;
         (royaltyReciever, royaltyAmount) = IRoyaltyFeeManager(royaltyFeeManager).calculateRoyaltyFeeAndGetRecipient(order.collection, order.tokenId, order.price);
         uint256 value = order.price - fee - royaltyAmount;
 
         if (msg.value > 0) {
             require(order.currency == WETH && msg.value == order.price, "Failed transfer");
-        } else {    
+        } else {
             IERC20Upgradeable(order.currency).safeTransferFrom(maker, address(this), order.price);
         }
         
@@ -269,11 +270,7 @@ contract PawnfiApproveTrade is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         _transferAsset(order.currency, protocolFeeReceiver, fee);
         _transferAsset(order.currency, taker, value);
 
-        if (order.assetClass == ERC721) {
-            TransferHelper.transferInNonFungibleToken(transferManager, order.collection, taker, maker, order.tokenId);
-        } else {
-            IERC1155Upgradeable(order.collection).safeTransferFrom(taker, maker, order.tokenId, order.price, "0x");
-        }
+        TransferHelper.transferInNonFungibleToken(transferManager, order.collection, taker, maker, order.tokenId);
     }
 
     /**
