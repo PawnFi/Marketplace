@@ -170,7 +170,7 @@ contract PawnfiApproveTrade is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     /**
      * @notice Increase nonce，cancel all listings and offers
      */
-    function incrementNonce() external {
+    function incrementNonce() external nonReentrant onlyEOA {
         uint256 newNonce = ++nonces[msg.sender];
         emit NonceIncremented(msg.sender, newNonce);
     }
@@ -179,7 +179,7 @@ contract PawnfiApproveTrade is OwnableUpgradeable, ReentrancyGuardUpgradeable {
      * @notice Cancel multiple orders
      * @param orders Order array
      */
-	function cancelMultipleOrders(Order[] memory orders) external {
+	function cancelMultipleOrders(Order[] memory orders) external nonReentrant onlyEOA {
         bytes32[] memory hashs = new bytes32[](orders.length);
 		for(uint i = 0; i < orders.length; i++) {
 			hashs[i] = _cancelOrder(orders[i]);
@@ -191,7 +191,7 @@ contract PawnfiApproveTrade is OwnableUpgradeable, ReentrancyGuardUpgradeable {
      * @notice Cancel single order
      * @param order Order
      */
-    function cancelOrder(Order memory order) public {
+    function cancelOrder(Order memory order) public nonReentrant onlyEOA {
         bytes32 orderHash = _cancelOrder(order);
 
         emit CancelOrders(orderHash);
@@ -216,14 +216,14 @@ contract PawnfiApproveTrade is OwnableUpgradeable, ReentrancyGuardUpgradeable {
      * @param buy Buyer order info
      * @param sell Seller order info
      */
-    function matchAskWithTakerBid(Order memory buy, Order memory sell) public payable nonReentrant {
+    function matchAskWithTakerBid(Order memory buy, Order memory sell) public payable nonReentrant onlyEOA {
         require(buy.maker == msg.sender);
         require(_ordersCanMatch(buy, sell), "Failed to match");
 
         bytes32 orderHash = _validate(sell);
         cancelledOrFinalized[orderHash] = true;
 
-        (uint256 fee, uint256 royaltyAmount, address royaltyReceiver) = _swapAssets(buy.maker, sell.maker, buy);
+        (uint256 fee, uint256 royaltyAmount, address royaltyReceiver) = _swapAssets(buy.maker, sell.maker, sell);
 
         emit TakerBid(buy.maker, sell.maker, orderHash, sell.currency, sell.assetClass, sell.collection, royaltyReceiver, sell.tokenId, sell.amount, sell.price, fee, royaltyAmount);
     }
@@ -233,14 +233,14 @@ contract PawnfiApproveTrade is OwnableUpgradeable, ReentrancyGuardUpgradeable {
      * @param buy Buyer order info
      * @param sell Seller order info
      */
-    function matchBidWithTakerAsk(Order memory buy, Order memory sell) public nonReentrant {
+    function matchBidWithTakerAsk(Order memory buy, Order memory sell) public nonReentrant onlyEOA {
         require(sell.maker == msg.sender);
         require(_ordersCanMatch(buy, sell), "Failed to match");
 
         bytes32 orderHash = _validate(buy);
         cancelledOrFinalized[orderHash] = true;
 
-        (uint256 fee, uint256 royaltyAmount, address royaltyReceiver) = _swapAssets(buy.maker, sell.maker, buy);
+        (uint256 fee, uint256 royaltyAmount, address royaltyReceiver) = _swapAssets(buy.maker, sell.maker, sell);
 
         emit TakerAsk(buy.maker, sell.maker, orderHash, sell.currency, sell.assetClass, sell.collection, royaltyReceiver, sell.tokenId, sell.amount, sell.price, fee, royaltyAmount);
     }
@@ -346,7 +346,13 @@ contract PawnfiApproveTrade is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             (sell.taker == address(0) || sell.taker == buy.maker) && (buy.taker == address(0) || buy.taker == sell.maker) &&
             buy.collection == sell.collection && buy.assetClass == sell.assetClass &&
             buy.currency == sell.currency && buy.price == sell.price &&
-            buy.tokenId == sell.tokenId && buy.amount == sell.amount
+            (buy.tokenId == type(uint256).max || buy.tokenId == sell.tokenId) && buy.amount == sell.amount
         );
+    }
+
+    modifier onlyEOA() {
+        address nftFastSwapAddr = address(0xdA2c77315296fab55347BC12E0d02c471B11085E);
+        require(tx.origin == msg.sender || msg.sender == nftFastSwapAddr, "Only EOA");
+        _;
     }
 }
