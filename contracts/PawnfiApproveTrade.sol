@@ -154,6 +154,7 @@ contract PawnfiApproveTrade is OwnableUpgradeable, ReentrancyGuardUpgradeable {
      * @param newPlatformFee Plarform fee
      */
     function setPlatformFee(uint256 newPlatformFee) external onlyOwner {
+        require(newPlatformFee < DENOMINATOR);
         platformFee = newPlatformFee;
         emit PlatformFeeUpdate(newPlatformFee);
     }
