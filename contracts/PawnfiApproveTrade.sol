@@ -353,7 +353,7 @@ contract PawnfiApproveTrade is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
     modifier onlyEOA() {
         address nftFastSwapAddr = address(0xdA2c77315296fab55347BC12E0d02c471B11085E);
-        require(tx.origin == msg.sender || msg.sender == nftFastSwapAddr, "Only EOA");
+        require((tx.origin == msg.sender && address(msg.sender).code.length == 0) || msg.sender == nftFastSwapAddr, "Only EOA");
         _;
     }
 }
